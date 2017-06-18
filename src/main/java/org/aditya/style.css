@@ -1,0 +1,17 @@
+.alive {
+    -fx-border-radius: 0 0 0 0;
+    -fx-background-radius: 0 0 0 0;
+    -fx-background-color: aqua;
+    -fx-text-fill: aqua;
+    -fx-start-margin: 1;
+    -fx-end-margin: 1;
+}
+
+.dead {
+    -fx-border-radius: 0 0 0 0;
+    -fx-background-radius: 0 0 0 0;
+    -fx-background-color: white;
+    -fx-text-fill: white;
+    -fx-start-margin: 1;
+    -fx-end-margin: 1;
+}

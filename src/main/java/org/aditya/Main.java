@@ -2,6 +2,7 @@ package org.aditya;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -14,8 +15,11 @@ import java.util.List;
 public class Main extends Application {
     GridPane grid = new GridPane();
 
-    int width = 10;
-    int height = 10;
+    int width = 20;
+    int height = 20;
+    int buttonWidth = 25;
+    int buttonHeight = 25;
+    int buttonPadding = 1;
 
     List<Button> buttons = new ArrayList<>();
 
@@ -26,24 +30,41 @@ public class Main extends Application {
 
         addButtons();
 
-        stage.setScene(new Scene(grid, 500, 500));
+        Scene scene = new Scene(grid);
+        scene.getStylesheets().add(this.getClass().getResource("style.css").toExternalForm());
+
+        stage.setScene(scene);
         stage.show();
     }
-
 
     public static void main(String[] args) {
         launch(args);
     }
 
-    private void addButtons(){
+    private void addButtons() {
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                Button button = new Button("x: " + x + ", y: " + y);
+                Button button = new Button("F");
                 button.setOnAction(actionEvent -> {
-                    System.out.println(button.getText());
+                    toggleState(button);
                 });
+                button.setPrefSize(buttonWidth, buttonHeight);
+                GridPane.setMargin(button, new Insets(buttonPadding, buttonPadding, buttonPadding, buttonPadding));
+                button.getStyleClass().add("dead");
                 grid.add(button, x, y);
             }
+        }
+    }
+
+    private void toggleState(Button button) {
+        if (button.getText().equals("F")) {
+            button.setText("T");
+            button.getStyleClass().clear();
+            button.getStyleClass().add("alive");
+        } else {
+            button.setText("F");
+            button.getStyleClass().clear();
+            button.getStyleClass().add("dead");
         }
     }
 }
