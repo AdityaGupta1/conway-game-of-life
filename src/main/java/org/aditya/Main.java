@@ -10,8 +10,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
-import java.util.Arrays;
-
 public class Main extends Application {
     private GridPane grid = new GridPane();
 
@@ -21,7 +19,7 @@ public class Main extends Application {
     private int buttonHeight = 16;
     private int buttonPadding = 1;
 
-    private int tps = 60;
+    private int tps = 20;
 
     private boolean[][] cells = new boolean[height][width];
 
@@ -58,6 +56,11 @@ public class Main extends Application {
         startLoop();
     }
 
+    private boolean isCellAlive(Node node) {
+        // if shit goes down add a `(Button) node` cast
+        return node.getStyleClass().get(0).equals("alive");
+    }
+
     private long nextUpdate = 0;
 
     private void startLoop() {
@@ -77,18 +80,131 @@ public class Main extends Application {
                     return;
                 }
 
-                updateCellsArray();
+                updateButtons();
             }
         };
         animator.start();
     }
 
-    private void updateCellsArray() {
+    private void updateButtons() {
+        // read values from buttons; creates initial cells array
         for (Node node : grid.getChildren()) {
-            if (node instanceof Button) {
-                cells[GridPane.getRowIndex(node)][GridPane.getColumnIndex(node)] = ((Button) node).getStyleClass().get(0).equals("alive");
+            if (!(node instanceof Button)) {
+                continue;
             }
-        }\
+
+            int x = GridPane.getColumnIndex(node);
+            int y = GridPane.getRowIndex(node);
+
+            cells[y][x] = isCellAlive(node);
+        }
+
+        boolean[][] newCells = new boolean[height][width];
+
+        // apply rules to each button and populate new cells array
+        for (Node node : grid.getChildren()) {
+            if (!(node instanceof Button)) {
+                continue;
+            }
+
+            int x = GridPane.getColumnIndex(node);
+            int y = GridPane.getRowIndex(node);
+
+            if (isCellAlive(node)) {
+                switch (getLiveNeighbors(x, y)) {
+                    case 2:
+                    case 3:
+                        newCells[y][x] = true;
+                        break;
+                    default:
+                        newCells[y][x] = false;
+                        break;
+                }
+            } else {
+                switch (getLiveNeighbors(x, y)) {
+                    case 3:
+                        newCells[y][x] = true;
+                        break;
+                    default:
+                        newCells[y][x] = false;
+                        break;
+                }
+            }
+        }
+
+        // update button values
+        cells = newCells;
+        for (Node node : grid.getChildren()) {
+            if (!(node instanceof Button)) {
+                continue;
+            }
+
+            int x = GridPane.getColumnIndex(node);
+            int y = GridPane.getRowIndex(node);
+
+            Button button = (Button) node;
+
+            if (isCellAlive(button) != cells[y][x]) {
+                toggleState(button);
+            }
+        }
+    }
+
+    private int getLiveNeighbors(int x, int y) {
+        System.out.println("Starting x: " + x + ", y: " + y);
+
+        int neighbors = 0;
+
+        String type = "normal";
+
+        if (x == 0 && y == 0) {
+            type = "top left";
+        } else if (x == width - 1 && y == 0) {
+            type = "top right";
+        } else if (x == 0 && y == height - 1) {
+            type = "bottom left";
+        } else if (x == width - 1 && y == height - 1) {
+            type = "bottom right";
+        } else if (x == 0) {
+            type = "left";
+        } else if (y == 0) {
+            type = "top";
+        } else if (x == width - 1) {
+            type = "right";
+        } else if (y == height - 1) {
+            type = "bottom";
+        }
+
+        System.out.println("Type of x: " + x + ", y: " + y + " = " + type);
+
+        if (!type.equals("top left") && !type.equals("top") && !type.equals("top right") && !type.equals("left") && !type.equals("bottom left")) {
+            neighbors += cells[y - 1][x - 1] ? 1 : 0;
+        }
+        if (!type.equals("top right") && !type.equals("top") && !type.equals("top left") && !type.equals("right") && !type.equals("bottom right")) {
+            neighbors += cells[y - 1][x + 1] ? 1 : 0;
+        }
+        if (!type.equals("bottom left") && !type.equals("bottom") && !type.equals("bottom right") && !type.equals("left") && !type.equals("top left")) {
+            neighbors += cells[y + 1][x - 1] ? 1 : 0;
+        }
+        if (!type.equals("bottom right") && !type.equals("bottom") && !type.equals("bottom left") && !type.equals("right") && !type.equals("top right")) {
+            neighbors += cells[y + 1][x + 1] ? 1 : 0;
+        }
+        if (!type.equals("top") && !type.equals("top left") && !type.equals("top right")) {
+            neighbors += cells[y - 1][x] ? 1 : 0;
+        }
+        if (!type.equals("bottom") && !type.equals("bottom left") && !type.equals("bottom right")) {
+            neighbors += cells[y + 1][x] ? 1 : 0;
+        }
+        if (!type.equals("left") && !type.equals("top left") && !type.equals("bottom left")) {
+            neighbors += cells[y][x - 1] ? 1 : 0;
+        }
+        if (!type.equals("right") && !type.equals("top right") && !type.equals("bottom right")) {
+            neighbors += cells[y][x + 1] ? 1 : 0;
+        }
+
+        System.out.println("Finished x: " + x + ", y: " + y);
+
+        return neighbors;
     }
 
     private void addButtons() {
@@ -108,7 +224,7 @@ public class Main extends Application {
     }
 
     private void toggleState(Button button) {
-        if (button.getStyleClass().get(0).equals("dead")) {
+        if (!isCellAlive(button)) {
             button.getStyleClass().clear();
             button.getStyleClass().add("alive");
         } else {
