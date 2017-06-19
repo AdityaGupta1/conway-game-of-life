@@ -43,6 +43,12 @@ public class Main extends Application {
             }
         });
 
+        scene.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.N) {
+                updateButtons();
+            }
+        });
+
         int windowWidth = (width * buttonWidth) + (2 * width * buttonPadding);
         int windowHeight = (height * buttonHeight) + (2 * height * buttonPadding);
         stage.setMinWidth(windowWidth);
@@ -151,8 +157,6 @@ public class Main extends Application {
     }
 
     private int getLiveNeighbors(int x, int y) {
-        System.out.println("Starting x: " + x + ", y: " + y);
-
         int neighbors = 0;
 
         String type = "normal";
@@ -174,8 +178,6 @@ public class Main extends Application {
         } else if (y == height - 1) {
             type = "bottom";
         }
-
-        System.out.println("Type of x: " + x + ", y: " + y + " = " + type);
 
         if (!type.equals("top left") && !type.equals("top") && !type.equals("top right") && !type.equals("left") && !type.equals("bottom left")) {
             neighbors += cells[y - 1][x - 1] ? 1 : 0;
@@ -201,8 +203,6 @@ public class Main extends Application {
         if (!type.equals("right") && !type.equals("top right") && !type.equals("bottom right")) {
             neighbors += cells[y][x + 1] ? 1 : 0;
         }
-
-        System.out.println("Finished x: " + x + ", y: " + y);
 
         return neighbors;
     }
