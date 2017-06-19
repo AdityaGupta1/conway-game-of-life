@@ -15,3 +15,12 @@
     -fx-start-margin: 1;
     -fx-end-margin: 1;
 }
+
+.alive:hover, .dead:hover {
+    -fx-border-radius: 0 0 0 0;
+    -fx-background-radius: 0 0 0 0;
+    -fx-background-color: gold;
+    -fx-text-fill: gold;
+    -fx-start-margin: 1;
+    -fx-end-margin: 1;
+}
