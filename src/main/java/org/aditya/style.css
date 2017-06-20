@@ -24,3 +24,11 @@
     -fx-start-margin: 1;
     -fx-end-margin: 1;
 }
+
+HBox {
+    -fx-padding: 10;
+}
+
+.generation-label {
+    -fx-font-size: 24;
+}

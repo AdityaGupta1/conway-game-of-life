@@ -2,68 +2,108 @@ package org.aditya;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
 public class Main extends Application {
     private GridPane grid = new GridPane();
 
-    private int width = 64;
-    private int height = 64;
-    private int buttonWidth = 16;
-    private int buttonHeight = 16;
-    private int buttonPadding = 1;
+    private final int width = 64;
+    private final int height = 64;
+    private final int buttonWidth = 16;
+    private final int buttonHeight = 16;
+    private final int buttonPadding = 1;
 
-    private int tps = 20;
+    private final int tps = 20;
 
     private boolean[][] cells = new boolean[height][width];
 
     private boolean paused = true;
     private boolean gameRunning = true;
 
+    private int generation = 0;
+    private Label generationLabel = new Label("0");
+
+    private Button pause = new Button("Resume");
 
     @Override
     public void start(Stage stage) throws Exception {
         stage.setTitle("Conway's Game of Life");
 
+        VBox root = new VBox();
+
+        Button clearGrid = new Button("Clear Grid");
+        clearGrid.setOnAction(event -> {
+            clearGrid();
+            paused = true;
+            pause.setText("Resume");
+        });
+
+        pause.setOnAction(event -> {
+            togglePause();
+        });
+
+        ObservableList<String> placedOptions =
+                FXCollections.observableArrayList(
+                        "Cell",
+                        "Glider",
+                        "Block"
+                );
+        ComboBox<String> placedType = new ComboBox<>(placedOptions);
+        placedType.getSelectionModel().selectFirst();
+
+        HBox menu = new HBox(5, clearGrid, pause, placedType);
+
+        Pane spacer = new Pane();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        spacer.setMinSize(10, 1);
+        generationLabel.setMinWidth(Button.USE_PREF_SIZE);
+        generationLabel.getStyleClass().add("generation-label");
+        Button resetGenerationLabel = new Button("Reset");
+        resetGenerationLabel.setMinWidth(Button.USE_PREF_SIZE);
+        resetGenerationLabel.setOnAction(event -> {
+            generation = 0;
+            generationLabel.setText(String.valueOf(generation));
+            paused = true;
+            pause.setText("Resume");
+        });
+
+        menu.getChildren().addAll(spacer, generationLabel, resetGenerationLabel);
+
         addButtons();
 
-        Scene scene = new Scene(grid);
+        root.getChildren().addAll(grid, menu);
+
+        Scene scene = new Scene(root);
         scene.getStylesheets().add(this.getClass().getResource("style.css").toExternalForm());
 
         scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.P) {
-                paused = !paused;
-                System.out.println("Paused: " + paused);
+                togglePause();
             }
-        });
 
-        scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.N) {
                 updateButtons();
             }
         });
 
-        int windowWidth = (width * buttonWidth) + (2 * width * buttonPadding);
-        int windowHeight = (height * buttonHeight) + (2 * height * buttonPadding);
-        stage.setMinWidth(windowWidth);
-        stage.setMaxWidth(windowWidth);
-        stage.setMinHeight(windowHeight);
-        stage.setMaxHeight(windowHeight);
-
         stage.setScene(scene);
+        stage.setResizable(false);
         stage.show();
 
         startLoop();
     }
 
     private boolean isCellAlive(Node node) {
-        // if shit goes down add a `(Button) node` cast
         return node.getStyleClass().get(0).equals("alive");
     }
 
@@ -154,6 +194,10 @@ public class Main extends Application {
                 toggleState(button);
             }
         }
+
+        // update generation number
+        generation++;
+        generationLabel.setText(String.valueOf(generation));
     }
 
     private int getLiveNeighbors(int x, int y) {
@@ -231,6 +275,25 @@ public class Main extends Application {
             button.getStyleClass().clear();
             button.getStyleClass().add("dead");
         }
+    }
+
+    private void clearGrid() {
+        for (Node node : grid.getChildren()) {
+            if (!(node instanceof Button)) {
+                continue;
+            }
+
+            Button button = (Button) node;
+
+            if (isCellAlive(button)) {
+                toggleState(button);
+            }
+        }
+    }
+
+    private void togglePause() {
+        paused = !paused;
+        pause.setText(paused ? "Resume" : "Pause");
     }
 
     public static void main(String[] args) {
