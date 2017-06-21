@@ -6,6 +6,7 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -66,9 +67,16 @@ public class Main extends Application {
         Label speedLabel = new Label("FPS:");
         speedLabel.getStyleClass().add("speed-label");
 
-        TextField speedTextField = new TextField();
+        TextField speedTextField = new TextField(String.valueOf(tps));
+        speedTextField.setPromptText("60");
         speedTextField.textProperty().addListener((observable, oldValue, newValue) -> {
             int speed = 60;
+
+            if (newValue.equals("")) {
+                speed = 60;
+                tps = speed;
+                return;
+            }
 
             try {
                 speed = Integer.parseInt(newValue);
