@@ -14,13 +14,18 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+
 public class Main extends Application {
     private GridPane grid = new GridPane();
 
     private final int width = 64;
     private final int height = 64;
-    private final int buttonWidth = 16;
-    private final int buttonHeight = 16;
+    private final int buttonWidth = 9;
+    private final int buttonHeight = 9;
     private final int buttonPadding = 1;
 
     private final int tps = 20;
@@ -28,12 +33,15 @@ public class Main extends Application {
     private boolean[][] cells = new boolean[height][width];
 
     private boolean paused = true;
-    private boolean gameRunning = true;
 
     private int generation = 0;
     private Label generationLabel = new Label("0");
 
     private Button pause = new Button("Resume");
+
+    private final Structures structures = new Structures();
+
+    private final boolean highlightStructures = false;
 
     @Override
     public void start(Stage stage) throws Exception {
@@ -48,9 +56,7 @@ public class Main extends Application {
             pause.setText("Resume");
         });
 
-        pause.setOnAction(event -> {
-            togglePause();
-        });
+        pause.setOnAction(event -> togglePause());
 
         ObservableList<String> placedOptions =
                 FXCollections.observableArrayList(
@@ -96,6 +102,8 @@ public class Main extends Application {
             }
         });
 
+        structures.addStructuresToLists();
+
         stage.setScene(scene);
         stage.setResizable(false);
         stage.show();
@@ -104,7 +112,7 @@ public class Main extends Application {
     }
 
     private boolean isCellAlive(Node node) {
-        return node.getStyleClass().get(0).equals("alive");
+        return (node.getStyleClass().get(0).equals("alive") || node.getStyleClass().get(0).equals("structure"));
     }
 
     private long nextUpdate = 0;
@@ -180,6 +188,60 @@ public class Main extends Application {
 
         // update button values
         cells = newCells;
+        updateCellsArray();
+
+        // update generation number
+        generation++;
+        generationLabel.setText(String.valueOf(generation));
+
+        if (highlightStructures) {
+            updateStructures();
+        }
+    }
+
+    private void updateStructures() {
+        // find structures and update style classes accordingly
+        List<List<Integer>> structureCellIndices = new ArrayList<>();
+
+        Map<String, List<Structure>> structuresMap = structures.findStructures(cells);
+        for (String key : structuresMap.keySet()) {
+            for (Structure structure : structuresMap.get(key)) {
+                int[] index = structure.getIndex();
+                int[] size = structure.getSize();
+
+                for (int x = index[0]; x < index[0] + size[0]; x++) {
+                    for (int y = index[1]; y < index[1] + size[1]; y++) {
+                        if (cells[x][y]) {
+                            List<Integer> cellIndex = new ArrayList<>();
+                            cellIndex.add(x);
+                            cellIndex.add(y);
+                            structureCellIndices.add(cellIndex);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (Node node : grid.getChildren()) {
+            if (!(node instanceof Button)) {
+                continue;
+            }
+
+            List<Integer> cellIndex = new ArrayList<>();
+            int x = GridPane.getRowIndex(node);
+            int y = GridPane.getColumnIndex(node);
+            cellIndex.add(x);
+            cellIndex.add(y);
+            node.getStyleClass().clear();
+            if (structureCellIndices.contains(cellIndex)) {
+                node.getStyleClass().add("structure");
+            } else {
+                node.getStyleClass().add(cells[x][y] ? "alive" : "dead");
+            }
+        }
+    }
+
+    private void updateCellsArray() {
         for (Node node : grid.getChildren()) {
             if (!(node instanceof Button)) {
                 continue;
@@ -194,10 +256,6 @@ public class Main extends Application {
                 toggleState(button);
             }
         }
-
-        // update generation number
-        generation++;
-        generationLabel.setText(String.valueOf(generation));
     }
 
     private int getLiveNeighbors(int x, int y) {
@@ -259,6 +317,10 @@ public class Main extends Application {
                     toggleState(button);
                 });
                 button.setPrefSize(buttonWidth, buttonHeight);
+                button.setMinHeight(button.getPrefHeight());
+                button.setMaxHeight(button.getPrefHeight());
+                button.setMinWidth(button.getPrefWidth());
+                button.setMaxWidth(button.getPrefWidth());
                 GridPane.setMargin(button, new Insets(buttonPadding, buttonPadding, buttonPadding, buttonPadding));
                 button.getStyleClass().clear();
                 button.getStyleClass().add("dead");

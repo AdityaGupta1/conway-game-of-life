@@ -7,6 +7,15 @@
     -fx-end-margin: 1;
 }
 
+.structure {
+    -fx-border-radius: 0 0 0 0;
+    -fx-background-radius: 0 0 0 0;
+    -fx-background-color: gold;
+    -fx-text-fill: gold;
+    -fx-start-margin: 1;
+    -fx-end-margin: 1;
+}
+
 .dead {
     -fx-border-radius: 0 0 0 0;
     -fx-background-radius: 0 0 0 0;
