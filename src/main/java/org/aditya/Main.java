@@ -43,10 +43,6 @@ public class Main extends Application {
 
     private Button pause = new Button("Resume (P)");
 
-    private final Structures structures = new Structures();
-
-    private final boolean highlightStructures = false;
-
     @Override
     public void start(Stage stage) throws Exception {
         stage.setTitle("Conway's Game of Life");
@@ -92,16 +88,6 @@ public class Main extends Application {
             tps = speed;
         });
 
-        // ObservableList<String> placedOptions =
-        //         FXCollections.observableArrayList(
-        //                 "Cell",
-        //                 "Glider",
-        //                 "Block"
-        //         );
-        // ComboBox<String> placedType = new ComboBox<>(placedOptions);
-        // placedType.getSelectionModel().selectFirst();
-
-        // HBox menu = new HBox(5, clearGrid, pause, nextGeneration,  speedLabel, speedTextField, placedType);
         HBox menu = new HBox(5, clearGrid, pause, nextGeneration, speedLabel, speedTextField);
         menu.setAlignment(Pos.CENTER_LEFT);
 
@@ -136,8 +122,6 @@ public class Main extends Application {
                 nextGeneration.fire();
             }
         });
-
-        structures.addStructuresToLists();
 
         stage.setScene(scene);
         stage.setResizable(false);
@@ -228,52 +212,6 @@ public class Main extends Application {
         // update generation number
         generation++;
         generationLabel.setText(String.valueOf(generation));
-
-        if (highlightStructures) {
-            updateStructures();
-        }
-    }
-
-    private void updateStructures() {
-        // find structures and update style classes accordingly
-        List<List<Integer>> structureCellIndices = new ArrayList<>();
-
-        Map<String, List<Structure>> structuresMap = structures.findStructures(cells);
-        for (String key : structuresMap.keySet()) {
-            for (Structure structure : structuresMap.get(key)) {
-                int[] index = structure.getIndex();
-                int[] size = structure.getSize();
-
-                for (int x = index[0]; x < index[0] + size[0]; x++) {
-                    for (int y = index[1]; y < index[1] + size[1]; y++) {
-                        if (cells[x][y]) {
-                            List<Integer> cellIndex = new ArrayList<>();
-                            cellIndex.add(x);
-                            cellIndex.add(y);
-                            structureCellIndices.add(cellIndex);
-                        }
-                    }
-                }
-            }
-        }
-
-        for (Node node : grid.getChildren()) {
-            if (!(node instanceof Button)) {
-                continue;
-            }
-
-            List<Integer> cellIndex = new ArrayList<>();
-            int x = GridPane.getRowIndex(node);
-            int y = GridPane.getColumnIndex(node);
-            cellIndex.add(x);
-            cellIndex.add(y);
-            node.getStyleClass().clear();
-            if (structureCellIndices.contains(cellIndex)) {
-                node.getStyleClass().add("structure");
-            } else {
-                node.getStyleClass().add(cells[x][y] ? "alive" : "dead");
-            }
-        }
     }
 
     private void updateCellsArray() {
