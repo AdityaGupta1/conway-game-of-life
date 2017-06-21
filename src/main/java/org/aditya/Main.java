@@ -2,14 +2,18 @@ package org.aditya;
 
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
@@ -28,7 +32,7 @@ public class Main extends Application {
     private final int buttonHeight = 9;
     private final int buttonPadding = 1;
 
-    private final int tps = 20;
+    private int tps = 60;
 
     private boolean[][] cells = new boolean[height][width];
 
@@ -37,7 +41,7 @@ public class Main extends Application {
     private int generation = 0;
     private Label generationLabel = new Label("0");
 
-    private Button pause = new Button("Resume");
+    private Button pause = new Button("Resume (P)");
 
     private final Structures structures = new Structures();
 
@@ -52,22 +56,54 @@ public class Main extends Application {
         Button clearGrid = new Button("Clear Grid");
         clearGrid.setOnAction(event -> {
             clearGrid();
-            paused = true;
-            pause.setText("Resume");
+            pause();
         });
 
         pause.setOnAction(event -> togglePause());
 
-        ObservableList<String> placedOptions =
-                FXCollections.observableArrayList(
-                        "Cell",
-                        "Glider",
-                        "Block"
-                );
-        ComboBox<String> placedType = new ComboBox<>(placedOptions);
-        placedType.getSelectionModel().selectFirst();
+        Button nextGeneration = new Button("Next (N)");
+        nextGeneration.setOnAction(event -> {
+            updateButtons();
+            pause();
+        });
 
-        HBox menu = new HBox(5, clearGrid, pause, placedType);
+        Label speedLabel = new Label("FPS:");
+        speedLabel.getStyleClass().add("speed-label");
+
+        TextField speedTextField = new TextField();
+        speedTextField.textProperty().addListener((observable, oldValue, newValue) -> {
+            int speed = 60;
+
+            try {
+                speed = Integer.parseInt(newValue);
+            } catch (NumberFormatException exception) {
+                speedTextField.setText(newValue.replaceAll("[^0-9]", ""));
+            }
+
+            if (speed > 60) {
+                speed = 60;
+                speedTextField.setText("60");
+            }
+            if (speed < 1) {
+                speed = 1;
+                speedTextField.setText("1");
+            }
+
+            tps = speed;
+        });
+
+        // ObservableList<String> placedOptions =
+        //         FXCollections.observableArrayList(
+        //                 "Cell",
+        //                 "Glider",
+        //                 "Block"
+        //         );
+        // ComboBox<String> placedType = new ComboBox<>(placedOptions);
+        // placedType.getSelectionModel().selectFirst();
+
+        // HBox menu = new HBox(5, clearGrid, pause, nextGeneration,  speedLabel, speedTextField, placedType);
+        HBox menu = new HBox(5, clearGrid, pause, nextGeneration, speedLabel, speedTextField);
+        menu.setAlignment(Pos.CENTER_LEFT);
 
         Pane spacer = new Pane();
         HBox.setHgrow(spacer, Priority.ALWAYS);
@@ -79,8 +115,7 @@ public class Main extends Application {
         resetGenerationLabel.setOnAction(event -> {
             generation = 0;
             generationLabel.setText(String.valueOf(generation));
-            paused = true;
-            pause.setText("Resume");
+            pause();
         });
 
         menu.getChildren().addAll(spacer, generationLabel, resetGenerationLabel);
@@ -94,11 +129,11 @@ public class Main extends Application {
 
         scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.P) {
-                togglePause();
+                pause.fire();
             }
 
             if (event.getCode() == KeyCode.N) {
-                updateButtons();
+                nextGeneration.fire();
             }
         });
 
@@ -355,7 +390,12 @@ public class Main extends Application {
 
     private void togglePause() {
         paused = !paused;
-        pause.setText(paused ? "Resume" : "Pause");
+        pause.setText(paused ? "Resume (P)" : "Pause (P)");
+    }
+
+    private void pause() {
+        paused = true;
+        pause.setText("Resume (P)");
     }
 
     public static void main(String[] args) {
