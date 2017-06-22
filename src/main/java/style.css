@@ -36,3 +36,9 @@ HBox {
 .speed-label {
     -fx-font-size: 14;
 }
+
+.background {
+    -fx-border-color: aquamarine;
+    -fx-border-style: solid;
+    -fx-border-width: 3;
+}

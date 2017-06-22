@@ -1,41 +1,31 @@
-package org.aditya;
-
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.fxml.FXMLLoader;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.input.KeyCode;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import javafx.stage.StageStyle;
 
 public class Main extends Application {
     private GridPane grid = new GridPane();
 
-    private final int width = 64;
-    private final int height = 64;
-    private final int buttonWidth = 9;
-    private final int buttonHeight = 9;
+    private final int gridWidth = 64;
+    private final int gridHeight = 64;
     private final int buttonPadding = 1;
+    private final int menuHeight = 48;
+    private int buttonWidth = 8;
+    private int buttonHeight = 8;
 
-    private int tps = 60;
-
-    private boolean[][] cells = new boolean[height][width];
+    private boolean[][] cells = new boolean[gridHeight][gridWidth];
 
     private boolean paused = true;
 
@@ -44,15 +34,31 @@ public class Main extends Application {
 
     private Button pause = new Button("Resume (P)");
 
+    private final int maxSpeed = 30;
+    private int tps = maxSpeed;
+
     @Override
     public void start(Stage stage) throws Exception {
         stage.setTitle("Conway's Game of Life");
 
-        VBox root = new VBox();
+        stage.getIcons().add(new Image(getClass().getResourceAsStream("icon.png")));
 
-        Button clearGrid = new Button("Clear Grid");
+        stage.initStyle(StageStyle.UNDECORATED);
+
+        VBox root = new VBox();
+        root.getStyleClass().add("background");
+
+        Button clearGrid = new Button("Clear Grid (C)");
         clearGrid.setOnAction(event -> {
             clearGrid();
+            resetGenerations();
+            pause();
+        });
+
+        Button randomGrid = new Button("Random Grid (G)");
+        randomGrid.setOnAction(event -> {
+            randomGrid();
+            resetGenerations();
             pause();
         });
 
@@ -64,16 +70,17 @@ public class Main extends Application {
             pause();
         });
 
-        Label speedLabel = new Label("FPS:");
+        Label speedLabel = new Label("Max FPS:");
         speedLabel.getStyleClass().add("speed-label");
 
         TextField speedTextField = new TextField(String.valueOf(tps));
-        speedTextField.setPromptText("60");
+        speedTextField.setPromptText(String.valueOf(maxSpeed));
+        speedTextField.setMaxWidth(50);
         speedTextField.textProperty().addListener((observable, oldValue, newValue) -> {
-            int speed = 60;
+            int speed = maxSpeed;
 
             if (newValue.equals("")) {
-                speed = 60;
+                speed = maxSpeed;
                 tps = speed;
                 return;
             }
@@ -84,9 +91,9 @@ public class Main extends Application {
                 speedTextField.setText(newValue.replaceAll("[^0-9]", ""));
             }
 
-            if (speed > 60) {
-                speed = 60;
-                speedTextField.setText("60");
+            if (speed > maxSpeed) {
+                speed = maxSpeed;
+                speedTextField.setText(String.valueOf(maxSpeed));
             }
             if (speed < 1) {
                 speed = 1;
@@ -96,7 +103,9 @@ public class Main extends Application {
             tps = speed;
         });
 
-        HBox menu = new HBox(5, clearGrid, pause, nextGeneration, speedLabel, speedTextField);
+        HBox menu = new HBox(5, clearGrid, randomGrid, pause, nextGeneration, speedLabel, speedTextField);
+        menu.setMinHeight(menuHeight);
+        menu.setMaxHeight(menuHeight);
         menu.setAlignment(Pos.CENTER_LEFT);
 
         Pane spacer = new Pane();
@@ -104,15 +113,25 @@ public class Main extends Application {
         spacer.setMinSize(10, 1);
         generationLabel.setMinWidth(Button.USE_PREF_SIZE);
         generationLabel.getStyleClass().add("generation-label");
-        Button resetGenerationLabel = new Button("Reset");
-        resetGenerationLabel.setMinWidth(Button.USE_PREF_SIZE);
-        resetGenerationLabel.setOnAction(event -> {
+        Button resetGenerationButton = new Button("Reset (R)");
+        resetGenerationButton.setMinWidth(Button.USE_PREF_SIZE);
+        resetGenerationButton.setOnAction(event -> {
             generation = 0;
             generationLabel.setText(String.valueOf(generation));
             pause();
         });
 
-        menu.getChildren().addAll(spacer, generationLabel, resetGenerationLabel);
+        Button exitButton = new Button("Exit");
+        exitButton.setOnAction(event -> exit());
+
+        menu.getChildren().addAll(spacer, generationLabel, resetGenerationButton, exitButton);
+
+        Rectangle2D visualBounds = Screen.getPrimary().getVisualBounds();
+        double availableSpace = visualBounds.getMaxY() - menuHeight;
+        availableSpace -= 2 * gridHeight * buttonPadding;
+        // background
+        availableSpace -= 6;
+        buttonHeight = buttonWidth = ((int) Math.floor(availableSpace / (double) gridHeight));
 
         addButtons();
 
@@ -122,12 +141,22 @@ public class Main extends Application {
         scene.getStylesheets().add(this.getClass().getResource("style.css").toExternalForm());
 
         scene.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.P) {
-                pause.fire();
-            }
-
-            if (event.getCode() == KeyCode.N) {
-                nextGeneration.fire();
+            switch(event.getCode()) {
+                case P:
+                    pause.fire();
+                    break;
+                case N:
+                    nextGeneration.fire();
+                    break;
+                case R:
+                    resetGenerationButton.fire();
+                    break;
+                case C:
+                    clearGrid.fire();
+                    break;
+                case G:
+                    randomGrid.fire();
+                    break;
             }
         });
 
@@ -180,7 +209,7 @@ public class Main extends Application {
             cells[y][x] = isCellAlive(node);
         }
 
-        boolean[][] newCells = new boolean[height][width];
+        boolean[][] newCells = new boolean[gridHeight][gridWidth];
 
         // apply rules to each button and populate new cells array
         for (Node node : grid.getChildren()) {
@@ -239,6 +268,11 @@ public class Main extends Application {
         }
     }
 
+    private void resetGenerations() {
+        generation = 0;
+        generationLabel.setText("0");
+    }
+
     private int getLiveNeighbors(int x, int y) {
         int neighbors = 0;
 
@@ -246,19 +280,19 @@ public class Main extends Application {
 
         if (x == 0 && y == 0) {
             type = "top left";
-        } else if (x == width - 1 && y == 0) {
+        } else if (x == gridWidth - 1 && y == 0) {
             type = "top right";
-        } else if (x == 0 && y == height - 1) {
+        } else if (x == 0 && y == gridHeight - 1) {
             type = "bottom left";
-        } else if (x == width - 1 && y == height - 1) {
+        } else if (x == gridWidth - 1 && y == gridHeight - 1) {
             type = "bottom right";
         } else if (x == 0) {
             type = "left";
         } else if (y == 0) {
             type = "top";
-        } else if (x == width - 1) {
+        } else if (x == gridWidth - 1) {
             type = "right";
-        } else if (y == height - 1) {
+        } else if (y == gridHeight - 1) {
             type = "bottom";
         }
 
@@ -291,8 +325,8 @@ public class Main extends Application {
     }
 
     private void addButtons() {
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
+        for (int x = 0; x < gridWidth; x++) {
+            for (int y = 0; y < gridHeight; y++) {
                 Button button = new Button();
                 button.setOnAction(event -> {
                     toggleState(button);
@@ -334,6 +368,20 @@ public class Main extends Application {
         }
     }
 
+    private void randomGrid() {
+        clearGrid();
+
+        for (Node node : grid.getChildren()) {
+            if (!(node instanceof Button)) {
+                return;
+            }
+
+            if (Math.random() > 0.5) {
+                toggleState((Button) node);
+            }
+        }
+    }
+
     private void togglePause() {
         paused = !paused;
         pause.setText(paused ? "Resume (P)" : "Pause (P)");
@@ -342,6 +390,10 @@ public class Main extends Application {
     private void pause() {
         paused = true;
         pause.setText("Resume (P)");
+    }
+
+    private void exit() {
+        Platform.exit();
     }
 
     public static void main(String[] args) {
